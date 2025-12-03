@@ -163,9 +163,9 @@ See deployment guide in Phase 6 documentation.
 
 - [x] Phase 1: Database Setup ✅
 - [x] Phase 2: Project Structure ✅
-- [ ] Phase 3: Backend Implementation
-- [ ] Phase 4: Frontend Implementation
-- [ ] Phase 5: Git Workflow
+- [x] Phase 3: Backend Implementation ✅
+- [x] Phase 4: Frontend Implementation ✅
+- [x] Phase 5: Git Workflow ✅
 - [ ] Phase 6: Deployment
 - [ ] Phase 7: Documentation
 
@@ -183,7 +183,8 @@ See deployment guide in Phase 6 documentation.
 
 MIT
 
-## Adan Benchekroun
+## Author
 
-## Made by a Network Engineer for Network Engineers
+**Adan Benchekroun**
 
+Made by a Network Engineer for Network Engineers
