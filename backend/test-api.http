@@ -1,0 +1,60 @@
+### Network Device Inventory API Tests
+### Use with VS Code REST Client extension or similar tool
+
+### Variables
+@baseUrl = http://localhost:3001
+@contentType = application/json
+
+### 1. Get API Information
+GET {{baseUrl}}/
+
+### 2. Get All Devices
+GET {{baseUrl}}/devices
+
+### 3. Get Device by ID (replace :id with actual ID, e.g., 1)
+GET {{baseUrl}}/devices/1
+
+### 4. Create New Device
+POST {{baseUrl}}/devices
+Content-Type: {{contentType}}
+
+{
+  "hostname": "router-test-01",
+  "ip_address": "192.168.1.200",
+  "device_type": "Router",
+  "location": "Test Lab",
+  "status": "active",
+  "notes": "Testing API endpoint"
+}
+
+### 5. Update Device (replace :id with actual ID)
+PUT {{baseUrl}}/devices/1
+Content-Type: {{contentType}}
+
+{
+  "status": "maintenance",
+  "notes": "Updated via API test"
+}
+
+### 6. Delete Device (replace :id with actual ID)
+DELETE {{baseUrl}}/devices/6
+
+### 7. Create Device - Missing Required Field (Should return 400)
+POST {{baseUrl}}/devices
+Content-Type: {{contentType}}
+
+{
+  "hostname": "test-device",
+  "ip_address": "192.168.1.201"
+}
+
+### 8. Create Device - Invalid IP Format (Should return 400)
+POST {{baseUrl}}/devices
+Content-Type: {{contentType}}
+
+{
+  "hostname": "test-device",
+  "ip_address": "invalid-ip",
+  "device_type": "Router"
+}
+
