@@ -1,16 +1,15 @@
-# 🌐 Network Device Inventory Application
+# Network Device Inventory Application
 
 A full-stack web application for managing and tracking network infrastructure devices including routers, switches, firewalls, servers, and access points.
 
 ## Features
 
-- ✅ Full CRUD operations (Create, Read, Update, Delete)
-- 📱 Responsive design for desktop and tablet
-- 🎨 Modern, professional UI with intuitive navigation
-- 🔍 Device filtering and search capabilities
-- 📊 Dashboard statistics
-- 🔒 Secure environment variable management
-- 🚀 Ready for production deployment
+-  Full CRUD operations (Create, Read, Update, Delete)
+-  Responsive design for desktop and tablet
+-  Modern, professional UI with intuitive navigation
+-  Device filtering and search capabilities
+-  Secure environment variable management
+-  Ready for production deployment
 
 ## Tech Stack
 
@@ -187,4 +186,4 @@ MIT
 
 **Adan Benchekroun**
 
-Made by a Network Engineer for Network Engineers
+For IT by IT
