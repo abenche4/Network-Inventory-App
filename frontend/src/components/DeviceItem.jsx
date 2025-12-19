@@ -158,6 +158,11 @@ function DeviceItem({ device, onEdit, onDelete, users = [], onRefresh }) {
       <div className="device-header">
         <span className="device-icon">{deviceIcon}</span>
         <h3 className="device-hostname">{device.hostname}</h3>
+        <span
+          className={`badge ${device.assigned_to_name ? 'badge-assigned' : 'badge-available'}`}
+        >
+          {device.assigned_to_name ? 'Assigned' : 'Available'}
+        </span>
       </div>
 
       <div className="device-details">

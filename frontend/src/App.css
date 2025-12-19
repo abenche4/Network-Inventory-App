@@ -437,6 +437,25 @@ body {
   border-top: 1px solid var(--border-color);
 }
 
+.badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-assigned {
+  background: #f97316;
+  color: white;
+}
+
+.badge-available {
+  background: #22c55e;
+  color: white;
+}
+
 .device-files {
   margin-top: var(--spacing-sm);
   padding: var(--spacing-sm);
