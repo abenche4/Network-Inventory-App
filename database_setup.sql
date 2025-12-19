@@ -32,6 +32,19 @@ CREATE TABLE IF NOT EXISTS devices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Config / attachment versions per device
+CREATE TABLE IF NOT EXISTS device_files (
+    id SERIAL PRIMARY KEY,
+    device_id INT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    storage_path TEXT NOT NULL,
+    version INT NOT NULL,
+    content_type VARCHAR(100),
+    file_size INT,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT device_version_unique UNIQUE (device_id, version)
+);
+
 -- Insert 5 sample devices
 INSERT INTO devices (hostname, ip_address, device_type, location, status, notes) VALUES
 ('router-main-01', '192.168.1.1', 'Router', 'Data Center - Rack A', 'active', 'Primary gateway router for main network segment'),

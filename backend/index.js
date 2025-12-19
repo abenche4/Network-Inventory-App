@@ -5,6 +5,9 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const {
@@ -16,7 +19,9 @@ const {
   getUserByEmail,
   getUserById,
   getUsers,
-  ensureDefaultAdmin
+  ensureDefaultAdmin,
+  addDeviceFile,
+  getDeviceFiles
 } = require('./queries');
 
 // Initialize Express app
@@ -47,6 +52,9 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 8 // 8 hours
   }
 }));
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request logging middleware (optional but helpful for debugging)
 app.use((req, res, next) => {
@@ -184,6 +192,92 @@ app.get('/users', requireAuth, async (req, res) => {
       error: 'Failed to fetch users',
       message: error.message
     });
+  }
+});
+
+// Multer storage for attachments
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const deviceId = req.params.id || 'device';
+    const safeName = file.originalname.replace(/\s+/g, '_');
+    cb(null, `device-${deviceId}-${Date.now()}-${safeName}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+/**
+ * GET /devices/:id/files - list files for a device
+ */
+app.get('/devices/:id/files', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid device ID' });
+    }
+    const device = await getDeviceById(id);
+    if (!device) {
+      return res.status(404).json({ success: false, error: 'Device not found' });
+    }
+    const files = await getDeviceFiles(id);
+    const withUrls = files.map((f) => ({
+      ...f,
+      file_url: `${req.protocol}://${req.get('host')}/uploads/${path.basename(f.storage_path)}`
+    }));
+    res.json({ success: true, data: withUrls });
+  } catch (error) {
+    console.error('Error in GET /devices/:id/files:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch device files', message: error.message });
+  }
+});
+
+/**
+ * POST /devices/:id/files - upload a config/attachment
+ */
+app.post('/devices/:id/files', upload.single('file'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid device ID' });
+    }
+    const device = await getDeviceById(id);
+    if (!device) {
+      return res.status(404).json({ success: false, error: 'Device not found' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const record = await addDeviceFile({
+      device_id: id,
+      filename: req.file.originalname,
+      storage_path: req.file.path,
+      content_type: req.file.mimetype,
+      file_size: req.file.size
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'File uploaded',
+      data: {
+        ...record,
+        file_url: `${req.protocol}://${req.get('host')}/uploads/${path.basename(record.storage_path)}`
+      }
+    });
+  } catch (error) {
+    console.error('Error in POST /devices/:id/files:', error);
+    res.status(500).json({ success: false, error: 'Failed to upload file', message: error.message });
   }
 });
 

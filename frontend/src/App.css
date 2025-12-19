@@ -437,6 +437,43 @@ body {
   border-top: 1px solid var(--border-color);
 }
 
+.device-files {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+}
+
+.files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.files-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.files-list li {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.file-upload {
+  position: relative;
+}
+
 /* ============================================
    Users Section
    ============================================ */

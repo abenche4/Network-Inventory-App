@@ -107,6 +107,57 @@ const createDevice = async (data) => {
 };
 
 /**
+ * Get the next version number for a device file
+ * @param {number} deviceId - Device ID
+ * @returns {Promise<number>} Next version number
+ */
+const getNextFileVersion = async (deviceId) => {
+  const result = await pool.query(
+    'SELECT COALESCE(MAX(version), 0) + 1 AS next_version FROM device_files WHERE device_id = $1',
+    [deviceId]
+  );
+  return result.rows[0].next_version || 1;
+};
+
+/**
+ * Add a device file entry
+ * @param {Object} data
+ * @param {number} data.device_id
+ * @param {string} data.filename
+ * @param {string} data.storage_path
+ * @param {string} [data.content_type]
+ * @param {number} [data.file_size]
+ * @returns {Promise<Object>} Created file record
+ */
+const addDeviceFile = async (data) => {
+  const { device_id, filename, storage_path, content_type, file_size } = data;
+  const version = await getNextFileVersion(device_id);
+  const result = await pool.query(
+    `INSERT INTO device_files (device_id, filename, storage_path, version, content_type, file_size)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [device_id, filename, storage_path, version, content_type || null, file_size || null]
+  );
+  return result.rows[0];
+};
+
+/**
+ * Get device files
+ * @param {number} deviceId
+ * @returns {Promise<Array>}
+ */
+const getDeviceFiles = async (deviceId) => {
+  const result = await pool.query(
+    `SELECT id, device_id, filename, storage_path, version, content_type, file_size, uploaded_at
+     FROM device_files
+     WHERE device_id = $1
+     ORDER BY version DESC, uploaded_at DESC`,
+    [deviceId]
+  );
+  return result.rows;
+};
+
+/**
  * Update an existing device
  * @param {number} id - Device ID
  * @param {Object} data - Updated device data
@@ -300,5 +351,7 @@ module.exports = {
   getUsers,
   createUser,
   ensureDefaultAdmin,
+  addDeviceFile,
+  getDeviceFiles,
   pool // Export pool for graceful shutdown if needed
 };
