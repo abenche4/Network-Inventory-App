@@ -20,6 +20,9 @@ function App() {
   const [authError, setAuthError] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
 
   /**
    * Fetch all devices from the API
@@ -81,6 +84,7 @@ function App() {
       if (res.data.success) {
         setUser(res.data.user);
         setLoginForm({ email: '', password: '' });
+        fetchUsers();
       } else {
         setAuthError(res.data.message || 'Login failed');
       }
@@ -99,7 +103,43 @@ function App() {
   const handleLogout = async () => {
     await axios.post(`${API_URL}/auth/logout`);
     setUser(null);
+    setUsers([]);
   };
+
+  /**
+   * Fetch users (requires auth)
+   */
+  const fetchUsers = async () => {
+    if (!user) return;
+    try {
+      setUsersLoading(true);
+      setUsersError(null);
+      const res = await axios.get(`${API_URL}/users`);
+      if (res.data.success) {
+        setUsers(res.data.data || []);
+      } else {
+        setUsersError(res.data.message || 'Failed to load users');
+      }
+    } catch (err) {
+      setUsersError(
+        err.response?.data?.message ||
+          err.message ||
+          'Unable to load users. Please ensure you are logged in.'
+      );
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  // Fetch users whenever the logged-in user changes
+  useEffect(() => {
+    if (user) {
+      fetchUsers();
+    } else {
+      setUsers([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   /**
    * Handle creating a new device
@@ -255,6 +295,48 @@ function App() {
 
       {/* Main Content */}
       <main className="app-main">
+        {/* Users panel */}
+        <section className="users-section">
+          <div className="section-header">
+            <h2>👥 Users</h2>
+            {user && (
+              <button className="btn btn-secondary" onClick={fetchUsers} disabled={usersLoading}>
+                Refresh
+              </button>
+            )}
+          </div>
+          {!user && <p className="muted">Login to view users.</p>}
+          {user && usersError && <div className="error-banner compact">{usersError}</div>}
+          {user && usersLoading && <p>Loading users...</p>}
+          {user && !usersLoading && users.length === 0 && <p className="muted">No users found.</p>}
+          {user && users.length > 0 && (
+            <div className="users-table-wrapper">
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td>{u.role}</td>
+                      <td>{u.active ? 'Active' : 'Inactive'}</td>
+                      <td>{new Date(u.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
         {/* Error Display */}
         {error && (
           <div className="error-banner">

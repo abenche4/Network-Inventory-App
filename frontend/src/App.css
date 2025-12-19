@@ -97,6 +97,43 @@ body {
   font-weight: 400;
 }
 
+.auth-panel {
+  margin-top: var(--spacing-md);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.auth-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-form input {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.auth-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.auth-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
 /* ============================================
    Main Content
    ============================================ */
@@ -398,6 +435,58 @@ body {
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-sm);
   border-top: 1px solid var(--border-color);
+}
+
+/* ============================================
+   Users Section
+   ============================================ */
+.users-section {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  gap: var(--spacing-sm);
+}
+
+.users-table-wrapper {
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.users-table th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.users-table tr:hover {
+  background: #f8fafc;
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.error-banner.compact {
+  margin-top: var(--spacing-sm);
 }
 
 /* ============================================
