@@ -42,7 +42,10 @@ pool.on('error', (err) => {
 const getDevices = async () => {
   try {
     const result = await pool.query(
-      'SELECT * FROM devices ORDER BY id ASC'
+      `SELECT d.*, u.name AS assigned_to_name, u.email AS assigned_to_email
+       FROM devices d
+       LEFT JOIN users u ON d.assigned_user_id = u.id
+       ORDER BY d.id ASC`
     );
     return result.rows;
   } catch (error) {
@@ -59,7 +62,10 @@ const getDevices = async () => {
 const getDeviceById = async (id) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM devices WHERE id = $1',
+      `SELECT d.*, u.name AS assigned_to_name, u.email AS assigned_to_email
+       FROM devices d
+       LEFT JOIN users u ON d.assigned_user_id = u.id
+       WHERE d.id = $1`,
       [id]
     );
     return result.rows[0] || null;
@@ -196,6 +202,14 @@ const updateDevice = async (id, data) => {
       fields.push(`notes = $${paramIndex++}`);
       values.push(notes);
     }
+    if (data.assigned_user_id !== undefined) {
+      fields.push(`assigned_user_id = $${paramIndex++}`);
+      values.push(data.assigned_user_id);
+    }
+    if (data.assigned_at !== undefined) {
+      fields.push(`assigned_at = $${paramIndex++}`);
+      values.push(data.assigned_at);
+    }
     
     if (fields.length === 0) {
       // No fields to update, just return the existing device
@@ -217,6 +231,37 @@ const updateDevice = async (id, data) => {
     console.error(`Error updating device with id ${id}:`, error);
     throw error;
   }
+};
+
+/**
+ * Assign a device to a user
+ * @param {number} deviceId
+ * @param {number} userId
+ * @returns {Promise<Object|null>} Updated device with join fields
+ */
+const assignDeviceToUser = async (deviceId, userId) => {
+  await pool.query(
+    `UPDATE devices
+     SET assigned_user_id = $1, assigned_at = NOW()
+     WHERE id = $2`,
+    [userId, deviceId]
+  );
+  return getDeviceById(deviceId);
+};
+
+/**
+ * Check in (unassign) a device
+ * @param {number} deviceId
+ * @returns {Promise<Object|null>} Updated device with join fields
+ */
+const unassignDevice = async (deviceId) => {
+  await pool.query(
+    `UPDATE devices
+     SET assigned_user_id = NULL, assigned_at = NULL
+     WHERE id = $1`,
+    [deviceId]
+  );
+  return getDeviceById(deviceId);
 };
 
 /**
@@ -353,5 +398,7 @@ module.exports = {
   ensureDefaultAdmin,
   addDeviceFile,
   getDeviceFiles,
+  assignDeviceToUser,
+  unassignDevice,
   pool // Export pool for graceful shutdown if needed
 };

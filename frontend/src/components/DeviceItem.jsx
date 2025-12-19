@@ -11,13 +11,18 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
  * - device: Object containing device data
  * - onEdit: Function to call when edit button is clicked
  * - onDelete: Function to call when delete button is clicked
+ * - users: Array of users for assignment
+ * - onRefresh: Optional callback to refresh parent list
  */
-function DeviceItem({ device, onEdit, onDelete }) {
+function DeviceItem({ device, onEdit, onDelete, users = [], onRefresh }) {
   const [filesOpen, setFilesOpen] = useState(false);
   const [files, setFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [filesError, setFilesError] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [assignUserId, setAssignUserId] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState(null);
 
   const loadFiles = async () => {
     try {
@@ -68,6 +73,41 @@ function DeviceItem({ device, onEdit, onDelete }) {
     } finally {
       setUploading(false);
       e.target.value = '';
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!assignUserId) {
+      setAssignError('Select a user to assign');
+      return;
+    }
+    try {
+      setAssigning(true);
+      setAssignError(null);
+      await axios.post(`${API_URL}/devices/${device.id}/assign`, { userId: assignUserId });
+      if (onRefresh) onRefresh();
+      setAssignUserId('');
+    } catch (err) {
+      setAssignError(
+        err.response?.data?.message || err.message || 'Assignment failed'
+      );
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleCheckin = async () => {
+    try {
+      setAssigning(true);
+      setAssignError(null);
+      await axios.post(`${API_URL}/devices/${device.id}/checkin`);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setAssignError(
+        err.response?.data?.message || err.message || 'Check-in failed'
+      );
+    } finally {
+      setAssigning(false);
     }
   };
   /**
@@ -148,6 +188,15 @@ function DeviceItem({ device, onEdit, onDelete }) {
           </span>
         </div>
 
+        <div className="device-detail-row">
+          <span className="detail-label">Assigned To:</span>
+          <span className="detail-value">
+            {device.assigned_to_name
+              ? `${device.assigned_to_name} (${device.assigned_to_email})`
+              : 'Available'}
+          </span>
+        </div>
+
         {device.notes && (
           <div className="device-notes">
             <span className="detail-label">Notes:</span>
@@ -178,6 +227,30 @@ function DeviceItem({ device, onEdit, onDelete }) {
         >
           📁 Files
         </button>
+      </div>
+
+      <div className="device-assign">
+        <div className="assign-row">
+          <select
+            value={assignUserId}
+            onChange={(e) => setAssignUserId(e.target.value)}
+          >
+            <option value="">Select user</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name} ({u.role})
+              </option>
+            ))}
+          </select>
+          <button className="btn btn-primary" onClick={handleAssign} disabled={assigning}>
+            Check-out
+          </button>
+          <button className="btn btn-secondary" onClick={handleCheckin} disabled={assigning}>
+            Check-in
+          </button>
+        </div>
+        {assignError && <div className="error-banner compact">{assignError}</div>}
+        {assigning && <p className="muted">Saving...</p>}
       </div>
 
       {filesOpen && (

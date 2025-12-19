@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS devices (
     location VARCHAR(100),
     status VARCHAR(20) DEFAULT 'active',
     notes TEXT,
+    assigned_user_id INT REFERENCES users(id),
+    assigned_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

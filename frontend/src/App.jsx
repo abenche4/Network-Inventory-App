@@ -402,6 +402,8 @@ function App() {
             onCreate={handleCreate}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
+            users={users}
+            onRefresh={fetchDevices}
           />
         )}
       </main>

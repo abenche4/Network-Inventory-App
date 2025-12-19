@@ -21,7 +21,9 @@ const {
   getUsers,
   ensureDefaultAdmin,
   addDeviceFile,
-  getDeviceFiles
+  getDeviceFiles,
+  assignDeviceToUser,
+  unassignDevice
 } = require('./queries');
 
 // Initialize Express app
@@ -278,6 +280,53 @@ app.post('/devices/:id/files', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('Error in POST /devices/:id/files:', error);
     res.status(500).json({ success: false, error: 'Failed to upload file', message: error.message });
+  }
+});
+
+/**
+ * POST /devices/:id/assign - check out a device to a user
+ */
+app.post('/devices/:id/assign', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { userId } = req.body;
+    if (isNaN(id) || !userId) {
+      return res.status(400).json({ success: false, error: 'Device ID and userId required' });
+    }
+    const device = await getDeviceById(id);
+    if (!device) {
+      return res.status(404).json({ success: false, error: 'Device not found' });
+    }
+    const user = await getUserById(userId);
+    if (!user || !user.active) {
+      return res.status(400).json({ success: false, error: 'User not found or inactive' });
+    }
+    const updated = await assignDeviceToUser(id, userId);
+    res.json({ success: true, message: 'Device assigned', data: updated });
+  } catch (error) {
+    console.error('Error in POST /devices/:id/assign:', error);
+    res.status(500).json({ success: false, error: 'Failed to assign device', message: error.message });
+  }
+});
+
+/**
+ * POST /devices/:id/checkin - check in a device (unassign)
+ */
+app.post('/devices/:id/checkin', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid device ID' });
+    }
+    const device = await getDeviceById(id);
+    if (!device) {
+      return res.status(404).json({ success: false, error: 'Device not found' });
+    }
+    const updated = await unassignDevice(id);
+    res.json({ success: true, message: 'Device checked in', data: updated });
+  } catch (error) {
+    console.error('Error in POST /devices/:id/checkin:', error);
+    res.status(500).json({ success: false, error: 'Failed to check in device', message: error.message });
   }
 });
 
