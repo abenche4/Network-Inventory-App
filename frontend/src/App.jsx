@@ -5,6 +5,7 @@ import './App.css';
 
 // Get API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+axios.defaults.withCredentials = true;
 
 /**
  * Main App Component
@@ -15,6 +16,10 @@ function App() {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
+  const [authError, setAuthError] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
 
   /**
    * Fetch all devices from the API
@@ -48,8 +53,53 @@ function App() {
    * Fetch devices when component mounts
    */
   useEffect(() => {
-    fetchDevices();
+    const init = async () => {
+      // Check existing session
+      try {
+        const res = await axios.get(`${API_URL}/auth/me`);
+        setUser(res.data.user);
+      } catch (err) {
+        console.warn('Unable to validate session', err);
+      } finally {
+        setAuthLoading(false);
+      }
+
+      fetchDevices();
+    };
+
+    init();
   }, []);
+
+  /**
+   * Handle login submit
+   */
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError(null);
+    try {
+      const res = await axios.post(`${API_URL}/auth/login`, loginForm);
+      if (res.data.success) {
+        setUser(res.data.user);
+        setLoginForm({ email: '', password: '' });
+      } else {
+        setAuthError(res.data.message || 'Login failed');
+      }
+    } catch (err) {
+      setAuthError(
+        err.response?.data?.message ||
+          err.message ||
+          'Login failed. Check your credentials.'
+      );
+    }
+  };
+
+  /**
+   * Handle logout
+   */
+  const handleLogout = async () => {
+    await axios.post(`${API_URL}/auth/logout`);
+    setUser(null);
+  };
 
   /**
    * Handle creating a new device
@@ -165,6 +215,42 @@ function App() {
       <header className="app-header">
         <h1 className="app-title">🌐 Network Device Inventory</h1>
         <p className="app-tagline">Manage and track your network infrastructure devices</p>
+
+        <div className="auth-panel">
+          {authLoading ? (
+            <span>Checking session...</span>
+          ) : user ? (
+            <div className="auth-info">
+              <div>
+                <strong>{user.name}</strong> ({user.role})
+              </div>
+              <div className="auth-actions">
+                <button className="btn btn-secondary" onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form className="auth-form" onSubmit={handleLogin}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm((prev) => ({ ...prev, email: e.target.value }))}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
+                required
+              />
+              <button type="submit" className="btn btn-primary">Login</button>
+              {authError && <span className="error-message inline">{authError}</span>}
+            </form>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}

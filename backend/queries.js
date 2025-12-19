@@ -2,6 +2,7 @@
 // Uses pg Pool for connection management and parameterized queries for security
 
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 // Configure database connection pool using environment variables
@@ -185,6 +186,108 @@ const deleteDevice = async (id) => {
   }
 };
 
+/**
+ * Get a user by email (for authentication)
+ * @param {string} email - User email
+ * @returns {Promise<Object|null>} User record or null
+ */
+const getUserByEmail = async (email) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, password_hash, role, active, created_at FROM users WHERE email = $1 LIMIT 1',
+      [email]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('Error fetching user by email:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a user by ID
+ * @param {number} id - User ID
+ * @returns {Promise<Object|null>} User record or null
+ */
+const getUserById = async (id) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, role, active, created_at FROM users WHERE id = $1 LIMIT 1',
+      [id]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('Error fetching user by id:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all users (for admin list)
+ * @returns {Promise<Array>} Array of user objects
+ */
+const getUsers = async () => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, role, active, created_at FROM users ORDER BY id ASC'
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a user with hashed password
+ * @param {Object} data - User data
+ * @param {string} data.name
+ * @param {string} data.email
+ * @param {string} data.password
+ * @param {string} [data.role='admin']
+ * @param {boolean} [data.active=true]
+ * @returns {Promise<Object>} Created user (without password hash)
+ */
+const createUser = async (data) => {
+  try {
+    const { name, email, password, role = 'admin', active = true } = data;
+    const passwordHash = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `INSERT INTO users (name, email, password_hash, role, active)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, email, role, active, created_at`,
+      [name, email, passwordHash, role, active]
+    );
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+};
+
+/**
+ * Ensure a default admin user exists (for demo/login)
+ */
+const ensureDefaultAdmin = async () => {
+  const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@example.com';
+  const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
+  const defaultName = process.env.DEFAULT_ADMIN_NAME || 'Admin User';
+
+  const existing = await getUserByEmail(defaultEmail);
+  if (existing) {
+    return existing;
+  }
+
+  console.log(`Creating default admin user (${defaultEmail}). Please change the password.`);
+  return createUser({
+    name: defaultName,
+    email: defaultEmail,
+    password: defaultPassword,
+    role: 'admin',
+    active: true
+  });
+};
+
 // Export all database operations
 module.exports = {
   getDevices,
@@ -192,5 +295,10 @@ module.exports = {
   createDevice,
   updateDevice,
   deleteDevice,
+  getUserByEmail,
+  getUserById,
+  getUsers,
+  createUser,
+  ensureDefaultAdmin,
   pool // Export pool for graceful shutdown if needed
 };

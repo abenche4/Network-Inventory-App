@@ -3,6 +3,8 @@
 
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const {
@@ -10,7 +12,11 @@ const {
   getDeviceById,
   createDevice,
   updateDevice,
-  deleteDevice
+  deleteDevice,
+  getUserByEmail,
+  getUserById,
+  getUsers,
+  ensureDefaultAdmin
 } = require('./queries');
 
 // Initialize Express app
@@ -28,6 +34,20 @@ app.use(cors({
 // Body parser middleware - parses JSON request bodies
 app.use(express.json());
 
+// Session middleware for simple auth
+app.use(session({
+  name: 'inventory.sid',
+  secret: process.env.SESSION_SECRET || 'super-secret-session-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 60 * 8 // 8 hours
+  }
+}));
+
 // Request logging middleware (optional but helpful for debugging)
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -35,6 +55,97 @@ app.use((req, res, next) => {
 });
 
 // ==================== API ROUTES ====================
+
+/**
+ * Simple auth guard middleware
+ */
+const requireAuth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+      message: 'You must be logged in'
+    });
+  }
+  next();
+};
+
+/**
+ * POST /auth/login - Session login
+ */
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing credentials',
+        message: 'Email and password are required'
+      });
+    }
+
+    const user = await getUserByEmail(email);
+    if (!user || !user.active) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials',
+        message: 'Invalid email or password'
+      });
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials',
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Persist limited user info in session
+    req.session.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    };
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error('Error in POST /auth/login:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Login failed',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /auth/me - Current session user
+ */
+app.get('/auth/me', (req, res) => {
+  res.json({
+    success: true,
+    user: req.session.user || null
+  });
+});
+
+/**
+ * POST /auth/logout - Destroy session
+ */
+app.post('/auth/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.json({
+      success: true,
+      message: 'Logged out'
+    });
+  });
+});
 
 /**
  * GET / - API information endpoint
@@ -53,6 +164,27 @@ app.get('/', (req, res) => {
       'DELETE /devices/:id': 'Delete device'
     }
   });
+});
+
+/**
+ * GET /users - list users (auth required)
+ */
+app.get('/users', requireAuth, async (req, res) => {
+  try {
+    const users = await getUsers();
+    res.json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (error) {
+    console.error('Error in GET /users:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch users',
+      message: error.message
+    });
+  }
 });
 
 /**
@@ -362,6 +494,10 @@ app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📡 Frontend URL: ${FRONTEND_URL}`);
   console.log(`📊 Database: ${process.env.DB_DATABASE || 'network_inventory'}`);
+  // Create default admin user if missing
+  ensureDefaultAdmin().catch((err) =>
+    console.error('Failed to ensure default admin user:', err)
+  );
   console.log('✅ API is ready to accept requests');
 });
 
