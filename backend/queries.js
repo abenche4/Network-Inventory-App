@@ -36,15 +36,44 @@ pool.on('error', (err) => {
 });
 
 /**
+ * Get device type name by id
+ */
+const getDeviceTypeName = async (id) => {
+  if (!id) return null;
+  const result = await pool.query(
+    'SELECT name FROM device_types WHERE id = $1 LIMIT 1',
+    [id]
+  );
+  return result.rows[0]?.name || null;
+};
+
+/**
+ * Get manufacturer name by id
+ */
+const getManufacturerName = async (id) => {
+  if (!id) return null;
+  const result = await pool.query(
+    'SELECT name FROM manufacturers WHERE id = $1 LIMIT 1',
+    [id]
+  );
+  return result.rows[0]?.name || null;
+};
+
+/**
  * Get all devices from the database
  * @returns {Promise<Array>} Array of device objects
  */
 const getDevices = async () => {
   try {
     const result = await pool.query(
-      `SELECT d.*, u.name AS assigned_to_name, u.email AS assigned_to_email
+      `SELECT d.*, 
+              u.name AS assigned_to_name, u.email AS assigned_to_email,
+              dt.name AS device_type_name,
+              m.name AS manufacturer_name
        FROM devices d
        LEFT JOIN users u ON d.assigned_user_id = u.id
+       LEFT JOIN device_types dt ON d.device_type_id = dt.id
+       LEFT JOIN manufacturers m ON d.manufacturer_id = m.id
        ORDER BY d.id ASC`
     );
     return result.rows;
@@ -62,9 +91,14 @@ const getDevices = async () => {
 const getDeviceById = async (id) => {
   try {
     const result = await pool.query(
-      `SELECT d.*, u.name AS assigned_to_name, u.email AS assigned_to_email
+      `SELECT d.*, 
+              u.name AS assigned_to_name, u.email AS assigned_to_email,
+              dt.name AS device_type_name,
+              m.name AS manufacturer_name
        FROM devices d
        LEFT JOIN users u ON d.assigned_user_id = u.id
+       LEFT JOIN device_types dt ON d.device_type_id = dt.id
+       LEFT JOIN manufacturers m ON d.manufacturer_id = m.id
        WHERE d.id = $1`,
       [id]
     );
@@ -88,17 +122,33 @@ const getDeviceById = async (id) => {
  */
 const createDevice = async (data) => {
   try {
-    const { hostname, ip_address, device_type, location, status, notes } = data;
+    const {
+      hostname,
+      ip_address,
+      device_type,
+      device_type_id,
+      manufacturer_id,
+      location,
+      status,
+      notes
+    } = data;
+
+    let resolvedType = device_type;
+    if (!resolvedType && device_type_id) {
+      resolvedType = await getDeviceTypeName(device_type_id);
+    }
     
     // Use DEFAULT for status if not provided, and handle NULL for optional fields
     const result = await pool.query(
-      `INSERT INTO devices (hostname, ip_address, device_type, location, status, notes)
-       VALUES ($1, $2, $3, $4, COALESCE($5, 'active'), $6)
+      `INSERT INTO devices (hostname, ip_address, device_type, device_type_id, manufacturer_id, location, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'active'), $8)
        RETURNING *`,
       [
         hostname,
         ip_address,
-        device_type,
+        resolvedType || 'Other',
+        device_type_id || null,
+        manufacturer_id || null,
         location || null,
         status || 'active',
         notes || null
@@ -189,6 +239,14 @@ const updateDevice = async (id, data) => {
     if (device_type !== undefined) {
       fields.push(`device_type = $${paramIndex++}`);
       values.push(device_type);
+    }
+    if (data.device_type_id !== undefined) {
+      fields.push(`device_type_id = $${paramIndex++}`);
+      values.push(data.device_type_id);
+    }
+    if (data.manufacturer_id !== undefined) {
+      fields.push(`manufacturer_id = $${paramIndex++}`);
+      values.push(data.manufacturer_id);
     }
     if (location !== undefined) {
       fields.push(`location = $${paramIndex++}`);
@@ -384,6 +442,36 @@ const ensureDefaultAdmin = async () => {
   });
 };
 
+/**
+ * Ensure default device types and manufacturers are present
+ */
+const ensureDefaultLookups = async () => {
+  await pool.query(
+    `INSERT INTO device_types (name) VALUES
+      ('Router'), ('Switch'), ('Firewall'), ('Server'), ('Access Point'), ('Other')
+     ON CONFLICT (name) DO NOTHING`
+  );
+  await pool.query(
+    `INSERT INTO manufacturers (name) VALUES
+      ('Cisco'), ('Dell'), ('HP'), ('Juniper'), ('Ubiquiti'), ('Aruba')
+     ON CONFLICT (name) DO NOTHING`
+  );
+};
+
+const getDeviceTypes = async () => {
+  const result = await pool.query(
+    'SELECT id, name FROM device_types ORDER BY name ASC'
+  );
+  return result.rows;
+};
+
+const getManufacturers = async () => {
+  const result = await pool.query(
+    'SELECT id, name FROM manufacturers ORDER BY name ASC'
+  );
+  return result.rows;
+};
+
 // Export all database operations
 module.exports = {
   getDevices,
@@ -400,5 +488,8 @@ module.exports = {
   getDeviceFiles,
   assignDeviceToUser,
   unassignDevice,
+  ensureDefaultLookups,
+  getDeviceTypes,
+  getManufacturers,
   pool // Export pool for graceful shutdown if needed
 };

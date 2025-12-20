@@ -21,11 +21,23 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS device_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS manufacturers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS devices (
     id SERIAL PRIMARY KEY,
     hostname VARCHAR(100) NOT NULL,
     ip_address VARCHAR(15) NOT NULL,
     device_type VARCHAR(50) NOT NULL,
+    device_type_id INT REFERENCES device_types(id),
+    manufacturer_id INT REFERENCES manufacturers(id),
     location VARCHAR(100),
     status VARCHAR(20) DEFAULT 'active',
     notes TEXT,
@@ -46,6 +58,16 @@ CREATE TABLE IF NOT EXISTS device_files (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT device_version_unique UNIQUE (device_id, version)
 );
+
+-- Seed device types
+INSERT INTO device_types (name) VALUES
+('Router'), ('Switch'), ('Firewall'), ('Server'), ('Access Point'), ('Other')
+ON CONFLICT (name) DO NOTHING;
+
+-- Seed manufacturers
+INSERT INTO manufacturers (name) VALUES
+('Cisco'), ('Dell'), ('HP'), ('Juniper'), ('Ubiquiti'), ('Aruba')
+ON CONFLICT (name) DO NOTHING;
 
 -- Insert 5 sample devices
 INSERT INTO devices (hostname, ip_address, device_type, location, status, notes) VALUES

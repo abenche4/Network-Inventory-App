@@ -17,7 +17,8 @@ function DeviceDetail({ device, files = [], loading, error, onClose, onRefresh }
             <div className="detail-grid">
               <div><strong>Hostname:</strong> {device.hostname}</div>
               <div><strong>IP:</strong> {device.ip_address}</div>
-              <div><strong>Type:</strong> {device.device_type}</div>
+              <div><strong>Type:</strong> {device.device_type_name || device.device_type}</div>
+              <div><strong>Manufacturer:</strong> {device.manufacturer_name || '—'}</div>
               <div><strong>Status:</strong> {device.status}</div>
               <div><strong>Location:</strong> {device.location || '—'}</div>
               <div><strong>Assigned To:</strong> {device.assigned_to_name ? `${device.assigned_to_name} (${device.assigned_to_email})` : 'Available'}</div>

@@ -14,8 +14,20 @@ import DeviceForm from './DeviceForm';
  * - users: Array of user objects (optional, for assignment)
  * - onRefresh: Function to refresh device list (optional)
  * - onShowDetails: Function to show device detail (optional)
+ * - deviceTypes: Array of device type lookups
+ * - manufacturers: Array of manufacturer lookups
  */
-function DeviceList({ devices, onCreate, onUpdate, onDelete, users = [], onRefresh, onShowDetails }) {
+function DeviceList({
+  devices,
+  onCreate,
+  onUpdate,
+  onDelete,
+  users = [],
+  onRefresh,
+  onShowDetails,
+  deviceTypes = [],
+  manufacturers = []
+}) {
   const [editingDevice, setEditingDevice] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -79,6 +91,8 @@ function DeviceList({ devices, onCreate, onUpdate, onDelete, users = [], onRefre
         <DeviceForm
           onSave={handleSaveCreate}
           onCancel={handleCancelCreate}
+          deviceTypes={deviceTypes}
+          manufacturers={manufacturers}
         />
       )}
 
@@ -97,6 +111,8 @@ function DeviceList({ devices, onCreate, onUpdate, onDelete, users = [], onRefre
                   device={device}
                   onSave={handleSaveEdit}
                   onCancel={handleCancelEdit}
+                  deviceTypes={deviceTypes}
+                  manufacturers={manufacturers}
                 />
               ) : (
                 <DeviceItem

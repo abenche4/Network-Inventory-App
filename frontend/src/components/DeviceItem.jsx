@@ -177,6 +177,11 @@ function DeviceItem({ device, onEdit, onDelete, users = [], onRefresh, onShowDet
           <span className="detail-value device-type">{device.device_type}</span>
         </div>
 
+        <div className="device-detail-row">
+          <span className="detail-label">Manufacturer:</span>
+          <span className="detail-value">{device.manufacturer_name || '—'}</span>
+        </div>
+
         {device.location && (
           <div className="device-detail-row">
             <span className="detail-label">Location:</span>

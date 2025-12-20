@@ -23,7 +23,10 @@ const {
   addDeviceFile,
   getDeviceFiles,
   assignDeviceToUser,
-  unassignDevice
+  unassignDevice,
+  ensureDefaultLookups,
+  getDeviceTypes,
+  getManufacturers
 } = require('./queries');
 
 // Initialize Express app
@@ -194,6 +197,29 @@ app.get('/users', requireAuth, async (req, res) => {
       error: 'Failed to fetch users',
       message: error.message
     });
+  }
+});
+
+/**
+ * Lookup endpoints
+ */
+app.get('/lookups/device-types', async (req, res) => {
+  try {
+    const types = await getDeviceTypes();
+    res.json({ success: true, data: types });
+  } catch (error) {
+    console.error('Error in GET /lookups/device-types:', error);
+    res.status(500).json({ success: false, error: 'Failed to load device types' });
+  }
+});
+
+app.get('/lookups/manufacturers', async (req, res) => {
+  try {
+    const manufacturers = await getManufacturers();
+    res.json({ success: true, data: manufacturers });
+  } catch (error) {
+    console.error('Error in GET /lookups/manufacturers:', error);
+    res.status(500).json({ success: false, error: 'Failed to load manufacturers' });
   }
 });
 
@@ -400,14 +426,14 @@ app.get('/devices/:id', async (req, res) => {
  */
 app.post('/devices', async (req, res) => {
   try {
-    const { hostname, ip_address, device_type, location, status, notes } = req.body;
+    const { hostname, ip_address, device_type, device_type_id, manufacturer_id, location, status, notes } = req.body;
     
     // Validate required fields
-    if (!hostname || !ip_address || !device_type) {
+    if (!hostname || !ip_address || (!device_type && !device_type_id)) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields',
-        message: 'hostname, ip_address, and device_type are required'
+        message: 'hostname, ip_address, and device_type (or device_type_id) are required'
       });
     }
     
@@ -421,14 +447,20 @@ app.post('/devices', async (req, res) => {
       });
     }
     
-    // Validate device_type is one of the allowed values
-    const allowedTypes = ['Router', 'Switch', 'Firewall', 'Server', 'Access Point', 'Other'];
-    if (!allowedTypes.includes(device_type)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid device type',
-        message: `device_type must be one of: ${allowedTypes.join(', ')}`
-      });
+    let validatedTypeId = device_type_id ? parseInt(device_type_id, 10) : null;
+    if (validatedTypeId) {
+      const types = await getDeviceTypes();
+      if (!types.find((t) => t.id === validatedTypeId)) {
+        return res.status(400).json({ success: false, error: 'Invalid device_type_id' });
+      }
+    }
+
+    let validatedManufacturerId = manufacturer_id ? parseInt(manufacturer_id, 10) : null;
+    if (validatedManufacturerId) {
+      const mans = await getManufacturers();
+      if (!mans.find((m) => m.id === validatedManufacturerId)) {
+        return res.status(400).json({ success: false, error: 'Invalid manufacturer_id' });
+      }
     }
     
     // Validate status if provided
@@ -444,6 +476,8 @@ app.post('/devices', async (req, res) => {
       hostname,
       ip_address,
       device_type,
+      device_type_id: validatedTypeId,
+      manufacturer_id: validatedManufacturerId,
       location,
       status,
       notes
@@ -491,7 +525,7 @@ app.put('/devices/:id', async (req, res) => {
       });
     }
     
-    const { hostname, ip_address, device_type, location, status, notes } = req.body;
+    const { hostname, ip_address, device_type, device_type_id, manufacturer_id, location, status, notes } = req.body;
     
     // Validate IP address format if provided
     if (ip_address) {
@@ -505,16 +539,22 @@ app.put('/devices/:id', async (req, res) => {
       }
     }
     
-    // Validate device_type if provided
-    if (device_type) {
-      const allowedTypes = ['Router', 'Switch', 'Firewall', 'Server', 'Access Point', 'Other'];
-      if (!allowedTypes.includes(device_type)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid device type',
-          message: `device_type must be one of: ${allowedTypes.join(', ')}`
-        });
+    if (device_type_id) {
+      const parsed = parseInt(device_type_id, 10);
+      const types = await getDeviceTypes();
+      if (!types.find((t) => t.id === parsed)) {
+        return res.status(400).json({ success: false, error: 'Invalid device_type_id' });
       }
+      req.body.device_type_id = parsed;
+    }
+
+    if (manufacturer_id) {
+      const parsed = parseInt(manufacturer_id, 10);
+      const mans = await getManufacturers();
+      if (!mans.find((m) => m.id === parsed)) {
+        return res.status(400).json({ success: false, error: 'Invalid manufacturer_id' });
+      }
+      req.body.manufacturer_id = parsed;
     }
     
     // Validate status if provided
@@ -530,6 +570,8 @@ app.put('/devices/:id', async (req, res) => {
       hostname,
       ip_address,
       device_type,
+      device_type_id: req.body.device_type_id,
+      manufacturer_id: req.body.manufacturer_id,
       location,
       status,
       notes
@@ -640,6 +682,9 @@ app.listen(PORT, () => {
   // Create default admin user if missing
   ensureDefaultAdmin().catch((err) =>
     console.error('Failed to ensure default admin user:', err)
+  );
+  ensureDefaultLookups().catch((err) =>
+    console.error('Failed to ensure default device lookups:', err)
   );
   console.log('✅ API is ready to accept requests');
 });

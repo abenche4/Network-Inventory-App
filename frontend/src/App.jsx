@@ -28,6 +28,8 @@ function App() {
   const [detailFiles, setDetailFiles] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState(null);
+  const [deviceTypes, setDeviceTypes] = useState([]);
+  const [manufacturers, setManufacturers] = useState([]);
 
   /**
    * Fetch all devices from the API
@@ -70,6 +72,18 @@ function App() {
         console.warn('Unable to validate session', err);
       } finally {
         setAuthLoading(false);
+      }
+
+      // Load lookups
+      try {
+        const [typesRes, mansRes] = await Promise.all([
+          axios.get(`${API_URL}/lookups/device-types`),
+          axios.get(`${API_URL}/lookups/manufacturers`)
+        ]);
+        if (typesRes.data.success) setDeviceTypes(typesRes.data.data || []);
+        if (mansRes.data.success) setManufacturers(mansRes.data.data || []);
+      } catch (err) {
+        console.warn('Failed to load lookups', err);
       }
 
       fetchDevices();
@@ -444,6 +458,8 @@ function App() {
             users={users}
             onRefresh={fetchDevices}
             onShowDetails={openDeviceDetail}
+            deviceTypes={deviceTypes}
+            manufacturers={manufacturers}
           />
         )}
       </main>
