@@ -16,6 +16,7 @@ const {
   createDevice,
   updateDevice,
   deleteDevice,
+  createUser,
   getUserByEmail,
   getUserById,
   getUsers,
@@ -135,6 +136,73 @@ app.post('/auth/login', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Login failed',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /auth/register - Create user and start session
+ */
+app.post('/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing fields',
+        message: 'Name, email, and password are required'
+      });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Weak password',
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    const existing = await getUserByEmail(email);
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate email',
+        message: 'A user with this email already exists'
+      });
+    }
+
+    const newUser = await createUser({
+      name,
+      email,
+      password,
+      role: 'user',
+      active: true
+    });
+
+    req.session.user = {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role
+    };
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered',
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error('Error in POST /auth/register:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate email',
+        message: 'A user with this email already exists'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: 'Registration failed',
       message: error.message
     });
   }

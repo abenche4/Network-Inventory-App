@@ -21,6 +21,8 @@ function App() {
   const [authError, setAuthError] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '' });
+  const [authMode, setAuthMode] = useState('login');
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState(null);
@@ -131,6 +133,31 @@ function App() {
     await axios.post(`${API_URL}/auth/logout`);
     setUser(null);
     setUsers([]);
+  };
+
+  /**
+   * Handle register submit
+   */
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setAuthError(null);
+    try {
+      const res = await axios.post(`${API_URL}/auth/register`, registerForm);
+      if (res.data.success) {
+        setUser(res.data.user);
+        setRegisterForm({ name: '', email: '', password: '' });
+        fetchUsers();
+        setAuthMode('login');
+      } else {
+        setAuthError(res.data.message || 'Registration failed');
+      }
+    } catch (err) {
+      setAuthError(
+        err.response?.data?.message ||
+          err.message ||
+          'Registration failed. Check your input.'
+      );
+    }
   };
 
   /**
@@ -315,6 +342,42 @@ function App() {
     maintenance: devices.filter(d => d.status?.toLowerCase() === 'maintenance').length
   };
 
+  const statusBreakdown = [
+    { label: 'Active', value: stats.active, color: '#4CAF50' },
+    { label: 'Inactive', value: stats.inactive, color: '#f44336' },
+    { label: 'Maintenance', value: stats.maintenance, color: '#ff9800' },
+    { label: 'Other', value: Math.max(stats.total - (stats.active + stats.inactive + stats.maintenance), 0), color: '#94a3b8' }
+  ];
+
+  const pieTotal = Math.max(
+    statusBreakdown.reduce((sum, seg) => sum + seg.value, 0),
+    1
+  );
+
+  const pieSegments = (() => {
+    let cumulative = 0;
+    return statusBreakdown
+      .filter((seg) => seg.value > 0)
+      .map((seg, idx) => {
+        const dash = (seg.value / pieTotal) * 100;
+        const offset = 100 - cumulative;
+        cumulative += dash;
+        return (
+          <circle
+            key={seg.label + idx}
+            r="15.915"
+            cx="50%"
+            cy="50%"
+            fill="transparent"
+            stroke={seg.color}
+            strokeWidth="6"
+            strokeDasharray={`${dash} ${100 - dash}`}
+            strokeDashoffset={offset}
+          />
+        );
+      });
+  })();
+
   const handleFilterSubmit = (e) => {
     e.preventDefault();
     fetchDevices();
@@ -370,24 +433,77 @@ function App() {
               </div>
             </div>
           ) : (
-            <form className="auth-form" onSubmit={handleLogin}>
-              <input
-                type="email"
-                placeholder="Email"
-                value={loginForm.email}
-                onChange={(e) => setLoginForm((prev) => ({ ...prev, email: e.target.value }))}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={loginForm.password}
-                onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
-                required
-              />
-              <button type="submit" className="btn btn-primary">Login</button>
-              {authError && <span className="error-message inline">{authError}</span>}
-            </form>
+            <div className="auth-forms">
+              <div className="auth-tabs">
+                <button
+                  type="button"
+                  className={`tab ${authMode === 'login' ? 'active' : ''}`}
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError(null);
+                  }}
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  className={`tab ${authMode === 'register' ? 'active' : ''}`}
+                  onClick={() => {
+                    setAuthMode('register');
+                    setAuthError(null);
+                  }}
+                >
+                  Register
+                </button>
+              </div>
+
+              {authMode === 'login' ? (
+                <form className="auth-form" onSubmit={handleLogin}>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm((prev) => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
+                    required
+                  />
+                  <button type="submit" className="btn btn-primary">Login</button>
+                  {authError && <span className="error-message inline">{authError}</span>}
+                </form>
+              ) : (
+                <form className="auth-form" onSubmit={handleRegister}>
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={registerForm.name}
+                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, name: e.target.value }))}
+                    required
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={registerForm.email}
+                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password (min 6 chars)"
+                    value={registerForm.password}
+                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
+                    required
+                  />
+                  <button type="submit" className="btn btn-primary">Register</button>
+                  {authError && <span className="error-message inline">{authError}</span>}
+                </form>
+              )}
+            </div>
           )}
         </div>
       </header>
@@ -513,6 +629,37 @@ function App() {
             </div>
           </div>
         </div>
+
+        {/* Pie chart visualization */}
+        <section className="pie-section">
+          <div className="pie-card">
+            <svg viewBox="0 0 36 36" className="pie-svg">
+              <circle
+                className="pie-bg"
+                r="15.915"
+                cx="50%"
+                cy="50%"
+                fill="transparent"
+                stroke="#e2e8f0"
+                strokeWidth="6"
+              />
+              {pieSegments}
+            </svg>
+            <div className="pie-center">
+              <div className="pie-total">{stats.total}</div>
+              <div className="pie-label">Devices</div>
+            </div>
+          </div>
+          <div className="pie-legend">
+            {statusBreakdown.map((seg) => (
+              <div key={seg.label} className="pie-legend-item">
+                <span className="legend-color" style={{ backgroundColor: seg.color }} />
+                <span>{seg.label}</span>
+                <span className="legend-value">{seg.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Loading State */}
         {loading && (
