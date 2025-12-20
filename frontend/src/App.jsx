@@ -354,6 +354,18 @@ function App() {
     { label: 'Other', value: Math.max(stats.total - (stats.active + stats.inactive + stats.maintenance), 0), color: '#94a3b8' }
   ];
 
+  // Location distribution
+  const locationCounts = Object.entries(
+    devices.reduce((acc, d) => {
+      const key = d.location || 'Unspecified';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([location, count]) => ({ location, count }))
+    .sort((a, b) => b.count - a.count);
+  const maxLocationCount = Math.max(...locationCounts.map((l) => l.count), 1);
+
   const pieTotal = Math.max(
     statusBreakdown.reduce((sum, seg) => sum + seg.value, 0),
     1
@@ -661,6 +673,29 @@ function App() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Locations bar chart */}
+        <section className="locations-section">
+          <h3>📍 Devices by Location</h3>
+          {locationCounts.length === 0 ? (
+            <p className="muted">No location data.</p>
+          ) : (
+            <div className="locations-bars">
+              {locationCounts.map((loc) => (
+                <div key={loc.location} className="location-row">
+                  <span className="location-label">{loc.location}</span>
+                  <div className="location-bar-wrapper">
+                    <div
+                      className="location-bar"
+                      style={{ width: `${(loc.count / maxLocationCount) * 100}%` }}
+                    />
+                  </div>
+                  <span className="location-count">{loc.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Loading State */}

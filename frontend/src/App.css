@@ -316,6 +316,52 @@ body {
   font-weight: 700;
 }
 
+.locations-section {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.locations-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+.location-row {
+  display: grid;
+  grid-template-columns: 1fr 3fr auto;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.location-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-bar-wrapper {
+  background: #e2e8f0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  height: 12px;
+}
+
+.location-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+}
+
+.location-count {
+  font-weight: 700;
+}
+
 .stat-card {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
