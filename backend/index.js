@@ -36,13 +36,27 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URLS = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((u) => u.trim())
+  .filter(Boolean);
+const sessionSecure =
+  process.env.SESSION_SECURE === 'true' || process.env.NODE_ENV === 'production';
+const sessionSameSite = sessionSecure ? 'none' : 'lax';
 
 // Middleware
-// CORS configuration - allows requests from frontend
-app.use(cors({
-  origin: FRONTEND_URL,
-  credentials: true
-}));
+// CORS configuration - allows requests from frontend(s)
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowed = FRONTEND_URLS.length > 0 ? FRONTEND_URLS : [FRONTEND_URL];
+      if (allowed.includes(origin)) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'), false);
+    },
+    credentials: true
+  })
+);
 
 // Body parser middleware - parses JSON request bodies
 app.use(express.json());
@@ -55,8 +69,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: sessionSameSite,
+    secure: sessionSecure,
     maxAge: 1000 * 60 * 60 * 8 // 8 hours
   }
 }));

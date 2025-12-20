@@ -97,7 +97,8 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_DATABASE=network_inventory
 PORT=3001
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:5173         # comma-separated for multiple origins
+SESSION_SECURE=false                       # set true on HTTPS deployments
 SESSION_SECRET=change_me
 
 # Default admin bootstrap (created at server start if missing)
