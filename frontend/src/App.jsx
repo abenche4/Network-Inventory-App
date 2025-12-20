@@ -364,6 +364,7 @@ function App() {
         const dash = (seg.value / pieTotal) * 100;
         const offset = 100 - cumulative;
         cumulative += dash;
+        const adjustedDash = Math.min(dash + 0.5, 100);
         return (
           <circle
             key={seg.label + idx}
@@ -373,7 +374,8 @@ function App() {
             fill="transparent"
             stroke={seg.color}
             strokeWidth="6"
-            strokeDasharray={`${dash} ${100 - dash}`}
+            strokeLinecap="round"
+            strokeDasharray={`${adjustedDash} ${100 - adjustedDash}`}
             strokeDashoffset={offset}
           />
         );
@@ -641,6 +643,7 @@ function App() {
                 fill="transparent"
                 stroke="#e2e8f0"
                 strokeWidth="6"
+                strokeLinecap="round"
               />
               {pieSegments}
             </svg>
