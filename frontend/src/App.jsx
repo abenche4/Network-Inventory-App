@@ -373,7 +373,6 @@ function App() {
             fill="transparent"
             stroke={seg.color}
             strokeWidth="6"
-            strokeLinecap="round"
             strokeDasharray={`${dash} ${100 - dash}`}
             strokeDashoffset={offset}
           />
@@ -642,7 +641,6 @@ function App() {
                 fill="transparent"
                 stroke="#e2e8f0"
                 strokeWidth="6"
-                strokeLinecap="round"
               />
               {pieSegments}
             </svg>
