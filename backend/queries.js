@@ -323,6 +323,34 @@ const unassignDevice = async (deviceId) => {
 };
 
 /**
+ * Add a history entry
+ */
+const addHistoryEntry = async ({ device_id, action, user_id = null, details = null }) => {
+  const result = await pool.query(
+    `INSERT INTO device_history (device_id, action, user_id, details)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [device_id, action, user_id, details ? JSON.stringify(details) : null]
+  );
+  return result.rows[0];
+};
+
+/**
+ * Get device history
+ */
+const getDeviceHistory = async (deviceId) => {
+  const result = await pool.query(
+    `SELECT h.*, u.name AS user_name, u.email AS user_email
+     FROM device_history h
+     LEFT JOIN users u ON h.user_id = u.id
+     WHERE h.device_id = $1
+     ORDER BY h.created_at DESC`,
+    [deviceId]
+  );
+  return result.rows;
+};
+
+/**
  * Delete a device by ID
  * @param {number} id - Device ID
  * @returns {Promise<Object|null>} Deleted device object or null if not found
@@ -491,5 +519,7 @@ module.exports = {
   ensureDefaultLookups,
   getDeviceTypes,
   getManufacturers,
+  addHistoryEntry,
+  getDeviceHistory,
   pool // Export pool for graceful shutdown if needed
 };

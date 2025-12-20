@@ -559,6 +559,24 @@ body {
   margin-top: var(--spacing-md);
 }
 
+.detail-history {
+  margin-top: var(--spacing-md);
+}
+
+.history-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.history-list li {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
+}
+
 /* ============================================
    Users Section
    ============================================ */

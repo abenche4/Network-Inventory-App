@@ -1,6 +1,6 @@
 import React from 'react';
 
-function DeviceDetail({ device, files = [], loading, error, onClose, onRefresh }) {
+function DeviceDetail({ device, files = [], history = [], loading, error, onClose, onRefresh }) {
   if (!device) return null;
 
   return (
@@ -53,6 +53,27 @@ function DeviceDetail({ device, files = [], loading, error, onClose, onRefresh }
                       <a href={f.file_url} target="_blank" rel="noreferrer">
                         Download
                       </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="detail-history">
+              <div className="section-header">
+                <h4>History</h4>
+              </div>
+              {history.length === 0 && <p className="muted">No history yet.</p>}
+              {history.length > 0 && (
+                <ul className="history-list">
+                  {history.map((h) => (
+                    <li key={h.id}>
+                      <div>
+                        <strong>{h.action}</strong> by {h.user_name || 'system'}
+                      </div>
+                      <div className="muted small">
+                        {new Date(h.created_at).toLocaleString()}
+                      </div>
                     </li>
                   ))}
                 </ul>

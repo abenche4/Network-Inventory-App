@@ -59,6 +59,16 @@ CREATE TABLE IF NOT EXISTS device_files (
     CONSTRAINT device_version_unique UNIQUE (device_id, version)
 );
 
+-- Simple history of assignments and status changes
+CREATE TABLE IF NOT EXISTS device_history (
+    id SERIAL PRIMARY KEY,
+    device_id INT NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    action VARCHAR(50) NOT NULL,
+    user_id INT REFERENCES users(id),
+    details JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Seed device types
 INSERT INTO device_types (name) VALUES
 ('Router'), ('Switch'), ('Firewall'), ('Server'), ('Access Point'), ('Other')

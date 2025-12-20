@@ -30,6 +30,7 @@ function App() {
   const [detailError, setDetailError] = useState(null);
   const [deviceTypes, setDeviceTypes] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
+  const [detailHistory, setDetailHistory] = useState([]);
 
   /**
    * Fetch all devices from the API
@@ -167,9 +168,10 @@ function App() {
     try {
       setDetailLoading(true);
       setDetailError(null);
-      const [deviceRes, filesRes] = await Promise.all([
+      const [deviceRes, filesRes, historyRes] = await Promise.all([
         axios.get(`${API_URL}/devices/${id}`),
-        axios.get(`${API_URL}/devices/${id}/files`)
+        axios.get(`${API_URL}/devices/${id}/files`),
+        axios.get(`${API_URL}/devices/${id}/history`)
       ]);
       if (deviceRes.data.success) {
         setSelectedDevice(deviceRes.data.data);
@@ -178,6 +180,9 @@ function App() {
       }
       if (filesRes.data.success) {
         setDetailFiles(filesRes.data.data || []);
+      }
+      if (historyRes.data.success) {
+        setDetailHistory(historyRes.data.data || []);
       }
     } catch (err) {
       setDetailError(
@@ -192,6 +197,7 @@ function App() {
     setSelectedDevice(null);
     setDetailFiles([]);
     setDetailError(null);
+    setDetailHistory([]);
   };
 
   /**
@@ -474,6 +480,7 @@ function App() {
         <DeviceDetail
           device={selectedDevice}
           files={detailFiles}
+          history={detailHistory}
           loading={detailLoading}
           error={detailError}
           onClose={closeDeviceDetail}

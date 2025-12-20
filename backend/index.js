@@ -26,7 +26,9 @@ const {
   unassignDevice,
   ensureDefaultLookups,
   getDeviceTypes,
-  getManufacturers
+  getManufacturers,
+  addHistoryEntry,
+  getDeviceHistory
 } = require('./queries');
 
 // Initialize Express app
@@ -328,6 +330,12 @@ app.post('/devices/:id/assign', requireAuth, async (req, res) => {
       return res.status(400).json({ success: false, error: 'User not found or inactive' });
     }
     const updated = await assignDeviceToUser(id, userId);
+    await addHistoryEntry({
+      device_id: id,
+      action: 'assigned',
+      user_id: req.session.user?.id || null,
+      details: { assigned_user_id: userId }
+    });
     res.json({ success: true, message: 'Device assigned', data: updated });
   } catch (error) {
     console.error('Error in POST /devices/:id/assign:', error);
@@ -349,10 +357,37 @@ app.post('/devices/:id/checkin', requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Device not found' });
     }
     const updated = await unassignDevice(id);
+    await addHistoryEntry({
+      device_id: id,
+      action: 'checked_in',
+      user_id: req.session.user?.id || null,
+      details: {}
+    });
     res.json({ success: true, message: 'Device checked in', data: updated });
   } catch (error) {
     console.error('Error in POST /devices/:id/checkin:', error);
     res.status(500).json({ success: false, error: 'Failed to check in device', message: error.message });
+  }
+});
+
+/**
+ * GET /devices/:id/history - history entries
+ */
+app.get('/devices/:id/history', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid device ID' });
+    }
+    const device = await getDeviceById(id);
+    if (!device) {
+      return res.status(404).json({ success: false, error: 'Device not found' });
+    }
+    const history = await getDeviceHistory(id);
+    res.json({ success: true, data: history });
+  } catch (error) {
+    console.error('Error in GET /devices/:id/history:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch history', message: error.message });
   }
 });
 
@@ -566,6 +601,15 @@ app.put('/devices/:id', async (req, res) => {
       });
     }
     
+    const existing = await getDeviceById(id);
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: 'Device not found',
+        message: `No device found with ID ${id}`
+      });
+    }
+
     const updatedDevice = await updateDevice(id, {
       hostname,
       ip_address,
@@ -577,14 +621,15 @@ app.put('/devices/:id', async (req, res) => {
       notes
     });
     
-    if (!updatedDevice) {
-      return res.status(404).json({
-        success: false,
-        error: 'Device not found',
-        message: `No device found with ID ${id}`
+    if (updatedDevice && existing.status !== updatedDevice.status) {
+      await addHistoryEntry({
+        device_id: id,
+        action: 'status_changed',
+        user_id: req.session.user?.id || null,
+        details: { from: existing.status, to: updatedDevice.status }
       });
     }
-    
+
     res.json({
       success: true,
       message: 'Device updated successfully',
