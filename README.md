@@ -4,12 +4,14 @@ A full-stack web application for managing and tracking network infrastructure de
 
 ## Features
 
--  Full CRUD operations (Create, Read, Update, Delete)
--  Responsive design for desktop and tablet
--  Modern, professional UI with intuitive navigation
--  Device filtering and search capabilities
--  Secure environment variable management
--  Ready for production deployment
+- Session login (email/password) with default admin seeding
+- Users list with roles and active status
+- Full device CRUD with assignment (check-out / check-in)
+- Device types & manufacturers lookups (normalized tables)
+- Config file uploads per device with versioning and download
+- Device detail modal with history (status/assignment) and attachments
+- Search + status filter and CSV export (respects filters)
+- Dashboard stats and assigned/available badges
 
 ## Tech Stack
 
@@ -94,6 +96,12 @@ DB_PORT=5432
 DB_DATABASE=network_inventory
 PORT=3001
 FRONTEND_URL=http://localhost:5173
+SESSION_SECRET=change_me
+
+# Default admin bootstrap (created at server start if missing)
+DEFAULT_ADMIN_EMAIL=admin@example.com
+DEFAULT_ADMIN_PASSWORD=admin123
+DEFAULT_ADMIN_NAME=Admin User
 ```
 
 ### Frontend (.env)
@@ -107,12 +115,23 @@ VITE_API_URL=http://localhost:3001
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | API information |
-| GET | `/devices` | Get all devices |
+| POST | `/auth/login` | Session login |
+| POST | `/auth/logout` | Session logout |
+| GET | `/auth/me` | Current session user |
+| GET | `/users` | List users (auth) |
+| GET | `/lookups/device-types` | Device types lookup |
+| GET | `/lookups/manufacturers` | Manufacturers lookup |
+| GET | `/devices` | Get devices (filters: `search`, `status`) |
 | GET | `/devices/:id` | Get device by ID |
-| POST | `/devices` | Create new device |
+| POST | `/devices` | Create device (supports device_type_id/manufacturer_id) |
 | PUT | `/devices/:id` | Update device |
 | DELETE | `/devices/:id` | Delete device |
+| POST | `/devices/:id/assign` | Assign (check-out) to user (auth) |
+| POST | `/devices/:id/checkin` | Check-in (unassign) device (auth) |
+| GET | `/devices/:id/files` | List device files |
+| POST | `/devices/:id/files` | Upload device file (multipart/form-data) |
+| GET | `/devices/:id/history` | Device history (status/assignment) |
+| GET | `/devices/export` | CSV export (respects filters) |
 
 ## Project Structure
 
@@ -160,23 +179,22 @@ See deployment guide in Phase 6 documentation.
 
 ## Development Status
 
-- [x] Phase 1: Database Setup ✅
-- [x] Phase 2: Project Structure ✅
-- [x] Phase 3: Backend Implementation ✅
-- [x] Phase 4: Frontend Implementation ✅
-- [x] Phase 5: Git Workflow ✅
-- [ ] Phase 6: Deployment
-- [ ] Phase 7: Documentation
+- [x] Database & seed data
+- [x] Auth + users
+- [x] Devices CRUD with assignment
+- [x] Device types/manufacturers lookups
+- [x] File uploads per device
+- [x] Device history
+- [x] Search/filter + CSV export
+- [ ] Deployment (pending)
+- [ ] Documentation polish
 
 ## Future Improvements
 
-- [ ] Device search and filtering
-- [ ] Bulk operations
-- [ ] Export to CSV/JSON
-- [ ] Device status monitoring
-- [ ] User authentication
-- [ ] Device history tracking
-- [ ] Email notifications
+- Bulk operations
+- Device status monitoring (ping/SNMP)
+- Email/alert notifications
+- CI/CD with auto-deploy
 
 ## License
 
