@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DeviceList from './components/DeviceList';
+import DeviceDetail from './components/DeviceDetail';
 import './App.css';
 
 // Get API URL from environment variable
@@ -23,6 +24,10 @@ function App() {
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState(null);
+  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [detailFiles, setDetailFiles] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(null);
 
   /**
    * Fetch all devices from the API
@@ -140,6 +145,40 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  /**
+   * Open device detail modal
+   */
+  const openDeviceDetail = async (id) => {
+    try {
+      setDetailLoading(true);
+      setDetailError(null);
+      const [deviceRes, filesRes] = await Promise.all([
+        axios.get(`${API_URL}/devices/${id}`),
+        axios.get(`${API_URL}/devices/${id}/files`)
+      ]);
+      if (deviceRes.data.success) {
+        setSelectedDevice(deviceRes.data.data);
+      } else {
+        setDetailError(deviceRes.data.message || 'Failed to load device');
+      }
+      if (filesRes.data.success) {
+        setDetailFiles(filesRes.data.data || []);
+      }
+    } catch (err) {
+      setDetailError(
+        err.response?.data?.message || err.message || 'Failed to load device details'
+      );
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDeviceDetail = () => {
+    setSelectedDevice(null);
+    setDetailFiles([]);
+    setDetailError(null);
+  };
 
   /**
    * Handle creating a new device
@@ -404,6 +443,7 @@ function App() {
             onDelete={handleDelete}
             users={users}
             onRefresh={fetchDevices}
+            onShowDetails={openDeviceDetail}
           />
         )}
       </main>
@@ -412,6 +452,18 @@ function App() {
       <footer className="app-footer">
         <p>Network Device Inventory Manager © 2024</p>
       </footer>
+
+      {/* Device Detail Modal */}
+      {selectedDevice && (
+        <DeviceDetail
+          device={selectedDevice}
+          files={detailFiles}
+          loading={detailLoading}
+          error={detailError}
+          onClose={closeDeviceDetail}
+          onRefresh={() => openDeviceDetail(selectedDevice.id)}
+        />
+      )}
     </div>
   );
 }

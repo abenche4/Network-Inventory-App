@@ -13,8 +13,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
  * - onDelete: Function to call when delete button is clicked
  * - users: Array of users for assignment
  * - onRefresh: Optional callback to refresh parent list
+ * - onShowDetails: Optional callback to open detail modal
  */
-function DeviceItem({ device, onEdit, onDelete, users = [], onRefresh }) {
+function DeviceItem({ device, onEdit, onDelete, users = [], onRefresh, onShowDetails }) {
   const [filesOpen, setFilesOpen] = useState(false);
   const [files, setFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
@@ -224,6 +225,13 @@ function DeviceItem({ device, onEdit, onDelete, users = [], onRefresh }) {
           aria-label={`Delete ${device.hostname}`}
         >
           🗑️ Delete
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => onShowDetails && onShowDetails(device.id)}
+          aria-label={`View details for ${device.hostname}`}
+        >
+          🔍 Details
         </button>
         <button
           className="btn btn-secondary"

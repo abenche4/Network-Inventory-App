@@ -13,8 +13,9 @@ import DeviceForm from './DeviceForm';
  * - onDelete: Function to call when a device is deleted
  * - users: Array of user objects (optional, for assignment)
  * - onRefresh: Function to refresh device list (optional)
+ * - onShowDetails: Function to show device detail (optional)
  */
-function DeviceList({ devices, onCreate, onUpdate, onDelete, users = [], onRefresh }) {
+function DeviceList({ devices, onCreate, onUpdate, onDelete, users = [], onRefresh, onShowDetails }) {
   const [editingDevice, setEditingDevice] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -105,6 +106,7 @@ function DeviceList({ devices, onCreate, onUpdate, onDelete, users = [], onRefre
                   onDelete={onDelete}
                   users={users}
                   onRefresh={onRefresh}
+                  onShowDetails={onShowDetails}
                 />
               )
             ))
