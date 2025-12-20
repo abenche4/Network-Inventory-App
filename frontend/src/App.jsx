@@ -6,7 +6,6 @@ import './App.css';
 
 // Get API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-axios.defaults.withCredentials = true;
 
 /**
  * Main App Component
@@ -17,12 +16,6 @@ function App() {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
-  const [authError, setAuthError] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({ name: '', email: '', password: '' });
-  const [authMode, setAuthMode] = useState('login');
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState(null);
@@ -74,16 +67,6 @@ function App() {
    */
   useEffect(() => {
     const init = async () => {
-      // Check existing session
-      try {
-        const res = await axios.get(`${API_URL}/auth/me`);
-        setUser(res.data.user);
-      } catch (err) {
-        console.warn('Unable to validate session', err);
-      } finally {
-        setAuthLoading(false);
-      }
-
       // Load lookups
       try {
         const [typesRes, mansRes] = await Promise.all([
@@ -97,74 +80,16 @@ function App() {
       }
 
       fetchDevices();
+      fetchUsers();
     };
 
     init();
   }, []);
 
   /**
-   * Handle login submit
-   */
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setAuthError(null);
-    try {
-      const res = await axios.post(`${API_URL}/auth/login`, loginForm);
-      if (res.data.success) {
-        setUser(res.data.user);
-        setLoginForm({ email: '', password: '' });
-        fetchUsers();
-      } else {
-        setAuthError(res.data.message || 'Login failed');
-      }
-    } catch (err) {
-      setAuthError(
-        err.response?.data?.message ||
-          err.message ||
-          'Login failed. Check your credentials.'
-      );
-    }
-  };
-
-  /**
-   * Handle logout
-   */
-  const handleLogout = async () => {
-    await axios.post(`${API_URL}/auth/logout`);
-    setUser(null);
-    setUsers([]);
-  };
-
-  /**
-   * Handle register submit
-   */
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setAuthError(null);
-    try {
-      const res = await axios.post(`${API_URL}/auth/register`, registerForm);
-      if (res.data.success) {
-        setUser(res.data.user);
-        setRegisterForm({ name: '', email: '', password: '' });
-        fetchUsers();
-        setAuthMode('login');
-      } else {
-        setAuthError(res.data.message || 'Registration failed');
-      }
-    } catch (err) {
-      setAuthError(
-        err.response?.data?.message ||
-          err.message ||
-          'Registration failed. Check your input.'
-      );
-    }
-  };
-
-  /**
    * Fetch users (requires auth)
    */
   const fetchUsers = async () => {
-    if (!user) return;
     try {
       setUsersLoading(true);
       setUsersError(null);
@@ -184,16 +109,6 @@ function App() {
       setUsersLoading(false);
     }
   };
-
-  // Fetch users whenever the logged-in user changes
-  useEffect(() => {
-    if (user) {
-      fetchUsers();
-    } else {
-      setUsers([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
 
   /**
    * Open device detail modal
@@ -418,94 +333,6 @@ function App() {
         <h1 className="app-title">🌐 Network Device Inventory</h1>
         <p className="app-tagline">Manage and track your network infrastructure devices</p>
 
-        <div className="auth-panel">
-          {authLoading ? (
-            <span>Checking session...</span>
-          ) : user ? (
-            <div className="auth-info">
-              <div>
-                <strong>{user.name}</strong> ({user.role})
-              </div>
-              <div className="auth-actions">
-                <button className="btn btn-secondary" onClick={handleLogout}>
-                  Logout
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="auth-forms">
-              <div className="auth-tabs">
-                <button
-                  type="button"
-                  className={`tab ${authMode === 'login' ? 'active' : ''}`}
-                  onClick={() => {
-                    setAuthMode('login');
-                    setAuthError(null);
-                  }}
-                >
-                  Login
-                </button>
-                <button
-                  type="button"
-                  className={`tab ${authMode === 'register' ? 'active' : ''}`}
-                  onClick={() => {
-                    setAuthMode('register');
-                    setAuthError(null);
-                  }}
-                >
-                  Register
-                </button>
-              </div>
-
-              {authMode === 'login' ? (
-                <form className="auth-form" onSubmit={handleLogin}>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={loginForm.email}
-                    onChange={(e) => setLoginForm((prev) => ({ ...prev, email: e.target.value }))}
-                    required
-                  />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
-                    required
-                  />
-                  <button type="submit" className="btn btn-primary">Login</button>
-                  {authError && <span className="error-message inline">{authError}</span>}
-                </form>
-              ) : (
-                <form className="auth-form" onSubmit={handleRegister}>
-                  <input
-                    type="text"
-                    placeholder="Name"
-                    value={registerForm.name}
-                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, name: e.target.value }))}
-                    required
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={registerForm.email}
-                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
-                    required
-                  />
-                  <input
-                    type="password"
-                    placeholder="Password (min 6 chars)"
-                    value={registerForm.password}
-                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
-                    required
-                  />
-                  <button type="submit" className="btn btn-primary">Register</button>
-                  {authError && <span className="error-message inline">{authError}</span>}
-                </form>
-              )}
-            </div>
-          )}
-        </div>
       </header>
 
       {/* Main Content */}
@@ -514,17 +341,14 @@ function App() {
         <section className="users-section">
           <div className="section-header">
             <h2>👥 Users</h2>
-            {user && (
-              <button className="btn btn-secondary" onClick={fetchUsers} disabled={usersLoading}>
-                Refresh
-              </button>
-            )}
+            <button className="btn btn-secondary" onClick={fetchUsers} disabled={usersLoading}>
+              Refresh
+            </button>
           </div>
-          {!user && <p className="muted">Login to view users.</p>}
-          {user && usersError && <div className="error-banner compact">{usersError}</div>}
-          {user && usersLoading && <p>Loading users...</p>}
-          {user && !usersLoading && users.length === 0 && <p className="muted">No users found.</p>}
-          {user && users.length > 0 && (
+          {usersError && <div className="error-banner compact">{usersError}</div>}
+          {usersLoading && <p>Loading users...</p>}
+          {!usersLoading && users.length === 0 && <p className="muted">No users found.</p>}
+          {!usersLoading && users.length > 0 && (
             <div className="users-table-wrapper">
               <table className="users-table">
                 <thead>

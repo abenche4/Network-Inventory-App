@@ -86,19 +86,8 @@ app.use((req, res, next) => {
 
 // ==================== API ROUTES ====================
 
-/**
- * Simple auth guard middleware
- */
-const requireAuth = (req, res, next) => {
-  if (!req.session.user) {
-    return res.status(401).json({
-      success: false,
-      error: 'Unauthorized',
-      message: 'You must be logged in'
-    });
-  }
-  next();
-};
+// Auth guard disabled (auth removed)
+const requireAuth = (req, res, next) => next();
 
 /**
  * POST /auth/login - Session login

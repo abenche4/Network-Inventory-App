@@ -4,16 +4,13 @@ A full-stack web application for managing and tracking network infrastructure de
 
 ## Features
 
-- Session login (email/password) with default admin seeding
 - Users list with roles and active status
 - Full device CRUD with assignment (check-out / check-in)
 - Device types & manufacturers lookups (normalized tables)
 - Config file uploads per device with versioning and download
 - Device detail modal with history (status/assignment) and attachments
-- User self-register (email/password) with session login
 - Search + status filter and CSV export (respects filters)
-- Dashboard stats and assigned/available badges
-- Pie chart visualization of device status distribution
+- Dashboard stats, assigned/available badges, and pie-chart visualization
 
 ## Tech Stack
 
@@ -118,10 +115,6 @@ VITE_API_URL=http://localhost:3001
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/auth/login` | Session login |
-| POST | `/auth/register` | Create user + start session |
-| POST | `/auth/logout` | Session logout |
-| GET | `/auth/me` | Current session user |
 | GET | `/users` | List users (auth) |
 | GET | `/lookups/device-types` | Device types lookup |
 | GET | `/lookups/manufacturers` | Manufacturers lookup |
