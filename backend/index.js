@@ -397,7 +397,11 @@ app.get('/devices/:id/history', async (req, res) => {
  */
 app.get('/devices', async (req, res) => {
   try {
-    const devices = await getDevices();
+    const filters = {
+      search: req.query.search || undefined,
+      status: req.query.status || undefined
+    };
+    const devices = await getDevices(filters);
     res.json({
       success: true,
       count: devices.length,

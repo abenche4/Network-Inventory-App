@@ -134,6 +134,24 @@ body {
   gap: var(--spacing-xs);
 }
 
+.filter-bar {
+  margin: var(--spacing-md) 0;
+}
+
+.filter-form {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-form input,
+.filter-form select {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
 /* ============================================
    Main Content
    ============================================ */

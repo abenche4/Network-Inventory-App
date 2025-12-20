@@ -31,6 +31,8 @@ function App() {
   const [deviceTypes, setDeviceTypes] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
   const [detailHistory, setDetailHistory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   /**
    * Fetch all devices from the API
@@ -41,7 +43,12 @@ function App() {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get(`${API_URL}/devices`);
+      const response = await axios.get(`${API_URL}/devices`, {
+        params: {
+          search: searchTerm || undefined,
+          status: statusFilter || undefined
+        }
+      });
       
       if (response.data.success) {
         setDevices(response.data.data || []);
@@ -308,6 +315,17 @@ function App() {
     maintenance: devices.filter(d => d.status?.toLowerCase() === 'maintenance').length
   };
 
+  const handleFilterSubmit = (e) => {
+    e.preventDefault();
+    fetchDevices();
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('');
+    fetchDevices();
+  };
+
   return (
     <div className="app">
       {/* Header */}
@@ -410,6 +428,31 @@ function App() {
             </button>
           </div>
         )}
+
+        {/* Filters */}
+        <section className="filter-bar">
+          <form className="filter-form" onSubmit={handleFilterSubmit}>
+            <input
+              type="text"
+              placeholder="Search by hostname or IP"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+            <button type="submit" className="btn btn-primary">Apply</button>
+            <button type="button" className="btn btn-secondary" onClick={handleClearFilters}>
+              Clear
+            </button>
+          </form>
+        </section>
 
         {/* Dashboard Statistics */}
         <div className="dashboard-stats">

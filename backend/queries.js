@@ -63,8 +63,26 @@ const getManufacturerName = async (id) => {
  * Get all devices from the database
  * @returns {Promise<Array>} Array of device objects
  */
-const getDevices = async () => {
+const getDevices = async (filters = {}) => {
   try {
+    const conditions = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (filters.search) {
+      conditions.push(`(d.hostname ILIKE $${paramIndex} OR d.ip_address ILIKE $${paramIndex})`);
+      values.push(`%${filters.search}%`);
+      paramIndex++;
+    }
+
+    if (filters.status) {
+      conditions.push(`LOWER(d.status) = LOWER($${paramIndex})`);
+      values.push(filters.status);
+      paramIndex++;
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
     const result = await pool.query(
       `SELECT d.*, 
               u.name AS assigned_to_name, u.email AS assigned_to_email,
@@ -74,7 +92,9 @@ const getDevices = async () => {
        LEFT JOIN users u ON d.assigned_user_id = u.id
        LEFT JOIN device_types dt ON d.device_type_id = dt.id
        LEFT JOIN manufacturers m ON d.manufacturer_id = m.id
-       ORDER BY d.id ASC`
+       ${whereClause}
+       ORDER BY d.id ASC`,
+      values
     );
     return result.rows;
   } catch (error) {
