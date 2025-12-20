@@ -264,9 +264,9 @@ app.get('/', (req, res) => {
 });
 
 /**
- * GET /users - list users (auth required)
+ * GET /users - list users (public)
  */
-app.get('/users', requireAuth, async (req, res) => {
+app.get('/users', async (req, res) => {
   try {
     const users = await getUsers();
     res.json({

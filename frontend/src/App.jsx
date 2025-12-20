@@ -97,21 +97,16 @@ function App() {
       }
 
       fetchDevices();
-      // only fetch users after we know session
-      if (user) {
-        fetchUsers();
-      }
+      fetchUsers();
     };
 
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
    * Fetch users (requires auth)
    */
   const fetchUsers = async () => {
-    if (!user) return;
     try {
       setUsersLoading(true);
       setUsersError(null);
@@ -125,22 +120,12 @@ function App() {
       setUsersError(
         err.response?.data?.message ||
           err.message ||
-          'Unable to load users. Please ensure you are logged in.'
+          'Unable to load users.'
       );
     } finally {
       setUsersLoading(false);
     }
   };
-
-  // Fetch users whenever the logged-in user changes
-  useEffect(() => {
-    if (user) {
-      fetchUsers();
-    } else {
-      setUsers([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
 
   /**
    * Handle login submit
