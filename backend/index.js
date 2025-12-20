@@ -418,6 +418,51 @@ app.get('/devices', async (req, res) => {
 });
 
 /**
+ * GET /devices/export - Export devices to CSV
+ */
+app.get('/devices/export', async (req, res) => {
+  try {
+    const filters = {
+      search: req.query.search || undefined,
+      status: req.query.status || undefined
+    };
+    const devices = await getDevices(filters);
+    const headers = [
+      'hostname',
+      'ip_address',
+      'device_type',
+      'manufacturer',
+      'status',
+      'assigned_to',
+      'location'
+    ];
+    const escape = (val = '') => `"${String(val ?? '').replace(/"/g, '""')}"`;
+    const rows = devices.map((d) =>
+      [
+        escape(d.hostname),
+        escape(d.ip_address),
+        escape(d.device_type_name || d.device_type),
+        escape(d.manufacturer_name || ''),
+        escape(d.status),
+        escape(d.assigned_to_name || ''),
+        escape(d.location || '')
+      ].join(',')
+    );
+    const csv = [headers.join(','), ...rows].join('\n');
+    res.header('Content-Type', 'text/csv');
+    res.attachment('devices.csv');
+    res.send(csv);
+  } catch (error) {
+    console.error('Error in GET /devices/export:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export devices',
+      message: error.message
+    });
+  }
+});
+
+/**
  * GET /devices/:id - Get device by ID
  * Returns a single device if found, 404 if not found
  */

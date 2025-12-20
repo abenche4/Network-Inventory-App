@@ -326,6 +326,28 @@ function App() {
     fetchDevices();
   };
 
+  const handleExport = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/devices/export`, {
+        params: {
+          search: searchTerm || undefined,
+          status: statusFilter || undefined
+        },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'devices.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to export CSV');
+    }
+  };
+
   return (
     <div className="app">
       {/* Header */}
@@ -450,6 +472,9 @@ function App() {
             <button type="submit" className="btn btn-primary">Apply</button>
             <button type="button" className="btn btn-secondary" onClick={handleClearFilters}>
               Clear
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={handleExport}>
+              Export CSV
             </button>
           </form>
         </section>
