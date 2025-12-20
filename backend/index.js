@@ -396,7 +396,7 @@ app.post('/devices/:id/files', upload.single('file'), async (req, res) => {
 /**
  * POST /devices/:id/assign - check out a device to a user
  */
-app.post('/devices/:id/assign', requireAuth, async (req, res) => {
+app.post('/devices/:id/assign', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { userId } = req.body;
@@ -415,7 +415,7 @@ app.post('/devices/:id/assign', requireAuth, async (req, res) => {
     await addHistoryEntry({
       device_id: id,
       action: 'assigned',
-      user_id: req.session.user?.id || null,
+      user_id: null,
       details: { assigned_user_id: userId }
     });
     res.json({ success: true, message: 'Device assigned', data: updated });
@@ -428,7 +428,7 @@ app.post('/devices/:id/assign', requireAuth, async (req, res) => {
 /**
  * POST /devices/:id/checkin - check in a device (unassign)
  */
-app.post('/devices/:id/checkin', requireAuth, async (req, res) => {
+app.post('/devices/:id/checkin', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -442,7 +442,7 @@ app.post('/devices/:id/checkin', requireAuth, async (req, res) => {
     await addHistoryEntry({
       device_id: id,
       action: 'checked_in',
-      user_id: req.session.user?.id || null,
+      user_id: null,
       details: {}
     });
     res.json({ success: true, message: 'Device checked in', data: updated });
